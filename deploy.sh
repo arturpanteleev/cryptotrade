@@ -15,7 +15,7 @@ screen -S $SCREEN_SESSION -X quit
 
 # Обновляем код
 echo "Получаем последние изменения из репозитория..."
-git pull origin main
+git pull origin master
 
 # Собираем новый бинарник
 echo "Собираем новый бинарник..."
