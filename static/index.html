@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crypto Prices</title>
+    <title>Crypto Arbitrage Table</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
+            background-color: #f9f9f9;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
             border: 1px solid #ddd;
@@ -24,91 +26,43 @@
         .pair {
             font-weight: bold;
         }
-    </style>
-</head>
-<body>
-<h1>Crypto Prices (Bid/Ask)</h1>
-<table id="prices-table">
-    <thead>
-    <tr>
-        <th>Symbol</th>
-        <th>Binance</th>
-        <th>Bybit</th>
-        <th>MEXC</th>
-        <th>Bitget</th>
-    </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-
-<script>
-    async function fetchPrices() {
-        const response = await fetch('/prices');
-        const data = await response.json();
-
-        const grouped = {};
-        data.forEach(ticker => {
-            if (!grouped[ticker.symbol]) grouped[ticker.symbol] = {};
-            grouped[ticker.symbol][ticker.exchange] = `${ticker.bid} / ${ticker.ask}`;
-        });
-
-        const tbody = document.querySelector('#prices-table tbody');
-        tbody.innerHTML = '';
-
-        for (const symbol in grouped) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-          <td class="pair">${symbol}</td>
-          <td>${grouped[symbol].Binance || '-'}</td>
-          <td>${grouped[symbol].Bybit || '-'}</td>
-          <td>${grouped[symbol].MEXC || '-'}</td>
-          <td>${grouped[symbol].Bitget || '-'}</td>
-        `;
-            tbody.appendChild(row);
-        }
-
-        console.log("prices has been updated")
-    }
-
-    fetchPrices();
-    setInterval(fetchPrices, 10000); // обновление каждые 10 секунд
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crypto Prices</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .pair {
+        .highlight-profit {
+            background-color: #d4edda;
             font-weight: bold;
         }
+        .muted {
+            color: #888;
+        }
+        .opportunity-row {
+            background-color: #e7f5ff;
+        }
+        .opportunity-row:hover {
+            background-color: #d0ebff;
+        }
+        .profit-value {
+            font-weight: bold;
+            color: #2b8a3e;
+        }
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .timestamp {
+            font-family: monospace;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
-<h1>Crypto Prices (Bid/Ask)</h1>
-<table id="prices-table">
+<h1>Crypto Arbitrage Opportunities</h1>
+<table id="arbitrage-table">
     <thead>
     <tr>
         <th>Symbol</th>
+        <th>Min Ask (Exchange)</th>
+        <th>Max Bid (Exchange)</th>
+        <th>Spread %</th>
         <th>Binance</th>
         <th>Bybit</th>
         <th>MEXC</th>
@@ -118,35 +72,170 @@
     <tbody></tbody>
 </table>
 
+<h2>Profitable Opportunities History</h2>
+<table id="opportunities-history">
+    <thead>
+    <tr>
+        <th>Timestamp</th>
+        <th>Symbol</th>
+        <th>Buy Exchange</th>
+        <th>Buy Price</th>
+        <th>Sell Exchange</th>
+        <th>Sell Price</th>
+        <th>Spread %</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
 <script>
-    async function fetchPrices() {
-        const response = await fetch('/prices');
-        const data = await response.json();
+    // Настройки
+    const MIN_PROFIT_THRESHOLD = 0.01; // Минимальный спред 0.01%
+    const MAX_HISTORY_ITEMS = 100;
+    let profitableOpportunities = [];
 
-        const grouped = {};
-        data.forEach(ticker => {
-            if (!grouped[ticker.symbol]) grouped[ticker.symbol] = {};
-            grouped[ticker.symbol][ticker.exchange] = `${ticker.bid} / ${ticker.ask}`;
-        });
+    function getCurrentTimestamp() {
+        const now = new Date();
+        return now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+    }
 
-        const tbody = document.querySelector('#prices-table tbody');
+    function updateMainTable(grouped, exchanges) {
+        const tbody = document.querySelector('#arbitrage-table tbody');
         tbody.innerHTML = '';
 
         for (const symbol in grouped) {
+            const exchangeData = grouped[symbol];
+            let minAsk = Infinity, maxBid = -Infinity;
+            let minAskExchange = '', maxBidExchange = '';
+
+            exchanges.forEach(exchange => {
+                const data = exchangeData[exchange];
+                if (!data) return;
+
+                if (data.ask < minAsk) {
+                    minAsk = data.ask;
+                    minAskExchange = exchange;
+                }
+                if (data.bid > maxBid) {
+                    maxBid = data.bid;
+                    maxBidExchange = exchange;
+                }
+            });
+
+            const spread = ((maxBid - minAsk) / minAsk) * 100;
+            const highlight = spread > 0 ? 'highlight-profit' : '';
+
             const row = document.createElement('tr');
+            row.className = highlight;
             row.innerHTML = `
-          <td class="pair">${symbol}</td>
-          <td>${grouped[symbol].Binance || '-'}</td>
-          <td>${grouped[symbol].Bybit || '-'}</td>
-          <td>${grouped[symbol].MEXC || '-'}</td>
-          <td>${grouped[symbol].Bitget || '-'}</td>
-        `;
+                <td class="pair">${symbol}</td>
+                <td>${minAsk.toFixed(2)} (${minAskExchange})</td>
+                <td>${maxBid.toFixed(2)} (${maxBidExchange})</td>
+                <td>${spread.toFixed(3)}%</td>
+                <td>${exchangeData.Binance ? `${exchangeData.Binance.bid} / ${exchangeData.Binance.ask}` : '<span class="muted">-</span>'}</td>
+                <td>${exchangeData.Bybit ? `${exchangeData.Bybit.bid} / ${exchangeData.Bybit.ask}` : '<span class="muted">-</span>'}</td>
+                <td>${exchangeData.MEXC ? `${exchangeData.MEXC.bid} / ${exchangeData.MEXC.ask}` : '<span class="muted">-</span>'}</td>
+                <td>${exchangeData.Bitget ? `${exchangeData.Bitget.bid} / ${exchangeData.Bitget.ask}` : '<span class="muted">-</span>'}</td>
+            `;
             tbody.appendChild(row);
         }
     }
 
+    function addOpportunityToHistory(opportunity) {
+        const historyTbody = document.querySelector('#opportunities-history tbody');
+
+        const row = document.createElement('tr');
+        row.className = 'opportunity-row';
+        row.innerHTML = `
+            <td class="timestamp">${opportunity.timestamp}</td>
+            <td class="pair">${opportunity.symbol}</td>
+            <td>${opportunity.buyExchange}</td>
+            <td>${opportunity.buyPrice.toFixed(2)}</td>
+            <td>${opportunity.sellExchange}</td>
+            <td>${opportunity.sellPrice.toFixed(2)}</td>
+            <td class="profit-value">${opportunity.spread.toFixed(3)}%</td>
+        `;
+
+        // Добавляем в начало таблицы
+        if (historyTbody.firstChild) {
+            historyTbody.insertBefore(row, historyTbody.firstChild);
+        } else {
+            historyTbody.appendChild(row);
+        }
+
+        // Ограничиваем количество строк в истории
+        while (historyTbody.children.length > MAX_HISTORY_ITEMS) {
+            historyTbody.removeChild(historyTbody.lastChild);
+        }
+    }
+
+    function detectProfitableOpportunities(grouped, exchanges) {
+        for (const symbol in grouped) {
+            const exchangeData = grouped[symbol];
+            const allPrices = exchanges
+                .filter(ex => exchangeData[ex])
+                .map(ex => ({
+                    exchange: ex,
+                    bid: exchangeData[ex].bid,
+                    ask: exchangeData[ex].ask
+                }));
+
+            if (allPrices.length < 2) continue;
+
+            // Находим лучшие цены
+            const bestAsk = allPrices.reduce((min, current) =>
+                current.ask < min.ask ? current : min
+            );
+            const bestBid = allPrices.reduce((max, current) =>
+                current.bid > max.bid ? current : max
+            );
+
+            // Пропускаем если биржи одинаковые
+            if (bestAsk.exchange === bestBid.exchange) continue;
+
+            const spread = ((bestBid.bid - bestAsk.ask) / bestAsk.ask) * 100;
+
+            // Добавляем все сделки с положительным спредом
+            if (spread >= MIN_PROFIT_THRESHOLD) {
+                const opportunity = {
+                    timestamp: getCurrentTimestamp(),
+                    symbol,
+                    buyExchange: bestAsk.exchange,
+                    buyPrice: bestAsk.ask,
+                    sellExchange: bestBid.exchange,
+                    sellPrice: bestBid.bid,
+                    spread
+                };
+
+                profitableOpportunities.unshift(opportunity);
+                addOpportunityToHistory(opportunity);
+            }
+        }
+    }
+
+    async function fetchPrices() {
+        try {
+            const response = await fetch('/prices');
+            const data = await response.json();
+
+            const exchanges = ['Binance', 'Bybit', 'MEXC', 'Bitget'];
+            const grouped = {};
+
+            data.forEach(({ symbol, exchange, bid, ask }) => {
+                if (!grouped[symbol]) grouped[symbol] = {};
+                grouped[symbol][exchange] = { bid, ask };
+            });
+
+            updateMainTable(grouped, exchanges);
+            detectProfitableOpportunities(grouped, exchanges);
+        } catch (error) {
+            console.error("Error fetching prices:", error);
+        }
+    }
+
+    // Запускаем обновление сразу и каждые 10 секунд
     fetchPrices();
-    setInterval(fetchPrices, 10000); // обновление каждые 10 секунд
+    setInterval(fetchPrices, 10000);
 </script>
 </body>
 </html>
