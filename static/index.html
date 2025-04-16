@@ -2,240 +2,611 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crypto Arbitrage Table</title>
+    <title>Crypto Arbitrage Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
             padding: 20px;
-            background-color: #f9f9f9;
         }
+
+        h1 {
+            color: #00d8a6;
+            margin-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+        }
+
+        .symbol {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+        }
+
+        .label {
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        .value {
+            font-weight: bold;
+        }
+
+        .spread {
+            color: #00d8a6;
+        }
+
+        .opportunity {
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 12px #00ff88;
+        }
+
+        .exchange-prices {
+            margin-top: 12px;
+        }
+
+        .exchange-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 4px 0;
+            border-top: 1px dashed #333;
+        }
+
+        .exchange-name {
+            color: #888;
+        }
+
+        .live-indicator {
+            font-size: 12px;
+            color: #888;
+            margin-top: -10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .live-indicator .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #00d8a6;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 40px;
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #1e1e1e;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:nth-child(even) {
+            background-color: #1a1a1a;
+        }
+
+        tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        .green {
+            color: #00ff88;
+        }
+
+        .red {
+            color: #ff5c5c;
+        }
+
+        .new-opportunity {
+            animation: highlight 3s;
+        }
+
+        @keyframes highlight {
+            0% { background-color: rgba(0, 255, 136, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
             text-align: center;
         }
-        th {
-            background-color: #f2f2f2;
+
+        .error {
+            background-color: rgba(255, 92, 92, 0.2);
+            border: 1px solid #ff5c5c;
         }
-        .pair {
-            font-weight: bold;
+
+        .settings {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 20px;
         }
-        .highlight-profit {
-            background-color: #d4edda;
-            font-weight: bold;
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
         }
-        .muted {
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-item label {
+            margin-bottom: 4px;
+            color: #aaa;
+        }
+
+        .setting-item input {
+            background-color: #2a2a2a;
+            border: 1px solid #333;
+            color: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .timestamp {
+            font-size: 12px;
             color: #888;
         }
-        .opportunity-row {
-            background-color: #e7f5ff;
+
+        .last-update {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
         }
-        .opportunity-row:hover {
-            background-color: #d0ebff;
+
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
         }
-        .profit-value {
-            font-weight: bold;
-            color: #2b8a3e;
+
+        .controls {
+            display: flex;
+            gap: 10px;
         }
-        h2 {
-            margin-top: 30px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
+
+        .btn {
+            background-color: #2a2a2a;
+            color: #f0f0f0;
+            border: 1px solid #333;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .timestamp {
-            font-family: monospace;
-            font-size: 0.9em;
+
+        .btn:hover {
+            background-color: #3a3a3a;
+        }
+
+        .btn-danger {
+            background-color: #3a1a1a;
+            border-color: #ff5c5c;
+        }
+
+        .btn-danger:hover {
+            background-color: #4a2a2a;
+        }
+
+        .max-deals {
+            margin-left: 20px;
         }
     </style>
 </head>
 <body>
-<h1>Crypto Arbitrage Opportunities</h1>
-<table id="arbitrage-table">
-    <thead>
-    <tr>
-        <th>Symbol</th>
-        <th>Min Ask (Exchange)</th>
-        <th>Max Bid (Exchange)</th>
-        <th>Spread %</th>
-        <th>Binance</th>
-        <th>Bybit</th>
-        <th>MEXC</th>
-        <th>Bitget</th>
-    </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+<h1>Crypto Arbitrage Dashboard</h1>
+<div class="live-indicator"><div class="status-dot"></div>Live updates every <span id="refresh-rate">10</span>s</div>
+<div id="status-container"></div>
 
-<h2>Profitable Opportunities History</h2>
-<table id="opportunities-history">
+<div class="settings">
+    <h3>Настройки</h3>
+    <div class="settings-grid">
+        <div class="setting-item">
+            <label for="min-spread">Мин. спред (%)</label>
+            <input type="number" id="min-spread" value="0.1" min="0" step="0.01">
+        </div>
+        <div class="setting-item">
+            <label for="refresh-interval">Интервал обновления (сек)</label>
+            <input type="number" id="refresh-interval" value="10" min="1">
+        </div>
+        <div class="setting-item">
+            <label for="investment-amount">Сумма инвестиций (USDT)</label>
+            <input type="number" id="investment-amount" value="1000" min="10">
+        </div>
+        <div class="setting-item">
+            <label for="max-deals">Макс. количество сделок</label>
+            <input type="number" id="max-deals" value="100" min="10" max="1000">
+        </div>
+    </div>
+</div>
+
+<div class="grid" id="dashboard"></div>
+
+<div class="control-panel">
+    <h2>Возможные сделки</h2>
+    <div class="controls">
+        <button id="clear-deals-btn" class="btn btn-danger">Очистить таблицу</button>
+        <button id="export-deals-btn" class="btn">Экспорт в CSV</button>
+    </div>
+</div>
+
+<div class="last-update">Последнее обновление: <span id="last-update-time">-</span></div>
+<table id="deals-table">
     <thead>
     <tr>
-        <th>Timestamp</th>
-        <th>Symbol</th>
-        <th>Buy Exchange</th>
-        <th>Buy Price</th>
-        <th>Sell Exchange</th>
-        <th>Sell Price</th>
-        <th>Spread %</th>
+        <th>Время</th>
+        <th>Пара</th>
+        <th>Покупка на</th>
+        <th>Цена Ask</th>
+        <th>Продажа на</th>
+        <th>Цена Bid</th>
+        <th>Спред (%)</th>
+        <th>$ Profit<br>@<span id="investment-display">1000</span> USDT</th>
     </tr>
     </thead>
     <tbody></tbody>
 </table>
 
 <script>
-    // Настройки
-    const MIN_PROFIT_THRESHOLD = 0.01; // Минимальный спред 0.01%
-    const MAX_HISTORY_ITEMS = 100;
-    let profitableOpportunities = [];
+    // Настройки по умолчанию
+    let MIN_PROFIT_THRESHOLD = 0.1; // Минимальный спред для отображения в таблице сделок
+    let REFRESH_INTERVAL = 10000; // Интервал обновления в мс
+    let INVESTMENT_AMOUNT = 1000; // Сумма инвестиций для расчёта прибыли
+    let MAX_DEALS = 100; // Максимальное количество сделок в таблице
+    let lastUpdateTime = '-';
+    let refreshTimer = null;
+
+    // Хранение уже отображенных сделок
+    let dealsHistory = {};
+
+    // Инициализация настроек из формы
+    function initSettings() {
+        document.getElementById('min-spread').value = MIN_PROFIT_THRESHOLD;
+        document.getElementById('refresh-interval').value = REFRESH_INTERVAL / 1000;
+        document.getElementById('investment-amount').value = INVESTMENT_AMOUNT;
+        document.getElementById('max-deals').value = MAX_DEALS;
+        document.getElementById('investment-display').textContent = INVESTMENT_AMOUNT;
+
+        // Обработчики изменения настроек
+        document.getElementById('min-spread').addEventListener('change', function() {
+            MIN_PROFIT_THRESHOLD = parseFloat(this.value);
+            fetchPrices(); // Обновляем данные сразу после изменения настроек
+        });
+
+        document.getElementById('refresh-interval').addEventListener('change', function() {
+            REFRESH_INTERVAL = parseInt(this.value) * 1000;
+            document.getElementById('refresh-rate').textContent = this.value;
+
+            // Перезапускаем таймер
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(fetchPrices, REFRESH_INTERVAL);
+        });
+
+        document.getElementById('investment-amount').addEventListener('change', function() {
+            INVESTMENT_AMOUNT = parseFloat(this.value);
+            document.getElementById('investment-display').textContent = INVESTMENT_AMOUNT;
+            updateProfitValues(); // Пересчитываем прибыль во всех строках
+        });
+
+        document.getElementById('max-deals').addEventListener('change', function() {
+            MAX_DEALS = parseInt(this.value);
+            trimDealsHistory(); // Убираем лишние сделки, если необходимо
+        });
+
+        // Обработчик кнопки очистки таблицы
+        document.getElementById('clear-deals-btn').addEventListener('click', function() {
+            document.querySelector('#deals-table tbody').innerHTML = '';
+            dealsHistory = {};
+        });
+
+        // Обработчик кнопки экспорта
+        document.getElementById('export-deals-btn').addEventListener('click', exportToCSV);
+    }
+
+    function setStatus(message, isError = false) {
+        const container = document.getElementById('status-container');
+        container.innerHTML = '';
+
+        if (message) {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status-message ${isError ? 'error' : ''}`;
+            statusDiv.textContent = message;
+            container.appendChild(statusDiv);
+        }
+    }
 
     function getCurrentTimestamp() {
         const now = new Date();
-        return now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+        return now.toLocaleTimeString();
     }
 
-    function updateMainTable(grouped, exchanges) {
-        const tbody = document.querySelector('#arbitrage-table tbody');
-        tbody.innerHTML = '';
-
-        for (const symbol in grouped) {
-            const exchangeData = grouped[symbol];
-            let minAsk = Infinity, maxBid = -Infinity;
-            let minAskExchange = '', maxBidExchange = '';
-
-            exchanges.forEach(exchange => {
-                const data = exchangeData[exchange];
-                if (!data) return;
-
-                if (data.ask < minAsk) {
-                    minAsk = data.ask;
-                    minAskExchange = exchange;
-                }
-                if (data.bid > maxBid) {
-                    maxBid = data.bid;
-                    maxBidExchange = exchange;
-                }
-            });
-
-            const spread = ((maxBid - minAsk) / minAsk) * 100;
-            const highlight = spread > 0 ? 'highlight-profit' : '';
-
-            const row = document.createElement('tr');
-            row.className = highlight;
-            row.innerHTML = `
-                <td class="pair">${symbol}</td>
-                <td>${minAsk.toFixed(2)} (${minAskExchange})</td>
-                <td>${maxBid.toFixed(2)} (${maxBidExchange})</td>
-                <td>${spread.toFixed(3)}%</td>
-                <td>${exchangeData.Binance ? `${exchangeData.Binance.bid} / ${exchangeData.Binance.ask}` : '<span class="muted">-</span>'}</td>
-                <td>${exchangeData.Bybit ? `${exchangeData.Bybit.bid} / ${exchangeData.Bybit.ask}` : '<span class="muted">-</span>'}</td>
-                <td>${exchangeData.MEXC ? `${exchangeData.MEXC.bid} / ${exchangeData.MEXC.ask}` : '<span class="muted">-</span>'}</td>
-                <td>${exchangeData.Bitget ? `${exchangeData.Bitget.bid} / ${exchangeData.Bitget.ask}` : '<span class="muted">-</span>'}</td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
-
-    function addOpportunityToHistory(opportunity) {
-        const historyTbody = document.querySelector('#opportunities-history tbody');
-
-        const row = document.createElement('tr');
-        row.className = 'opportunity-row';
-        row.innerHTML = `
-            <td class="timestamp">${opportunity.timestamp}</td>
-            <td class="pair">${opportunity.symbol}</td>
-            <td>${opportunity.buyExchange}</td>
-            <td>${opportunity.buyPrice.toFixed(2)}</td>
-            <td>${opportunity.sellExchange}</td>
-            <td>${opportunity.sellPrice.toFixed(2)}</td>
-            <td class="profit-value">${opportunity.spread.toFixed(3)}%</td>
-        `;
-
-        // Добавляем в начало таблицы
-        if (historyTbody.firstChild) {
-            historyTbody.insertBefore(row, historyTbody.firstChild);
-        } else {
-            historyTbody.appendChild(row);
-        }
-
-        // Ограничиваем количество строк в истории
-        while (historyTbody.children.length > MAX_HISTORY_ITEMS) {
-            historyTbody.removeChild(historyTbody.lastChild);
-        }
-    }
-
-    function detectProfitableOpportunities(grouped, exchanges) {
-        for (const symbol in grouped) {
-            const exchangeData = grouped[symbol];
-            const allPrices = exchanges
-                .filter(ex => exchangeData[ex])
-                .map(ex => ({
-                    exchange: ex,
-                    bid: exchangeData[ex].bid,
-                    ask: exchangeData[ex].ask
-                }));
-
-            if (allPrices.length < 2) continue;
-
-            // Находим лучшие цены
-            const bestAsk = allPrices.reduce((min, current) =>
-                current.ask < min.ask ? current : min
-            );
-            const bestBid = allPrices.reduce((max, current) =>
-                current.bid > max.bid ? current : max
-            );
-
-            // Пропускаем если биржи одинаковые
-            if (bestAsk.exchange === bestBid.exchange) continue;
-
-            const spread = ((bestBid.bid - bestAsk.ask) / bestAsk.ask) * 100;
-
-            // Добавляем все сделки с положительным спредом
-            if (spread >= MIN_PROFIT_THRESHOLD) {
-                const opportunity = {
-                    timestamp: getCurrentTimestamp(),
-                    symbol,
-                    buyExchange: bestAsk.exchange,
-                    buyPrice: bestAsk.ask,
-                    sellExchange: bestBid.exchange,
-                    sellPrice: bestBid.bid,
-                    spread
-                };
-
-                profitableOpportunities.unshift(opportunity);
-                addOpportunityToHistory(opportunity);
-            }
-        }
+    function getFullTimestamp() {
+        const now = new Date();
+        return now.toLocaleTimeString() + ' ' + now.toLocaleDateString();
     }
 
     async function fetchPrices() {
         try {
-            const response = await fetch('/prices');
-            const data = await response.json();
+            setStatus('Загрузка данных...');
+            const res = await fetch('/prices');
+            const data = await res.json();
+            lastUpdateTime = getFullTimestamp();
+            document.getElementById('last-update-time').textContent = lastUpdateTime;
 
-            const exchanges = ['Binance', 'Bybit', 'MEXC', 'Bitget'];
-            const grouped = {};
-
-            data.forEach(({ symbol, exchange, bid, ask }) => {
-                if (!grouped[symbol]) grouped[symbol] = {};
-                grouped[symbol][exchange] = { bid, ask };
-            });
-
-            updateMainTable(grouped, exchanges);
-            detectProfitableOpportunities(grouped, exchanges);
-        } catch (error) {
-            console.error("Error fetching prices:", error);
+            renderDashboard(data);
+            addNewDeals(data); // Используем addNewDeals вместо renderDeals
+            setStatus('');
+        } catch (e) {
+            console.error('Fetch error', e);
+            setStatus('Ошибка загрузки данных. Проверьте соединение с сервером.', true);
         }
     }
 
-    // Запускаем обновление сразу и каждые 10 секунд
+    function renderDashboard(data) {
+        const container = document.getElementById('dashboard');
+        container.innerHTML = '';
+
+        // Сортируем по спреду (от большего к меньшему)
+        const sortedSymbols = Object.keys(data).sort((a, b) => data[b].spread - data[a].spread);
+
+        for (const symbol of sortedSymbols) {
+            const item = data[symbol];
+            const isOpportunity = item.spread >= MIN_PROFIT_THRESHOLD && item.minAskExchange !== item.maxBidExchange;
+
+            const card = document.createElement('div');
+            card.className = 'card' + (isOpportunity ? ' opportunity' : '');
+
+            card.innerHTML = `
+                <div class="symbol">${symbol}</div>
+                <div class="info">
+                    <div class="label">Min Ask (${item.minAskExchange})</div>
+                    <div class="value">${item.minAsk}</div>
+                </div>
+                <div class="info">
+                    <div class="label">Max Bid (${item.maxBidExchange})</div>
+                    <div class="value">${item.maxBid}</div>
+                </div>
+                <div class="info">
+                    <div class="label">Spread</div>
+                    <div class="value spread">${item.spread.toFixed(2)}%</div>
+                </div>
+                <div class="exchange-prices">
+                    ${Object.entries(item.exchanges).map(([exchange, exData]) => `
+                        <div class="exchange-row">
+                            <div class="exchange-name">${exchange}</div>
+                            <div>${exData.bid} / ${exData.ask}</div>
+                        </div>`).join('')}
+                </div>
+            `;
+
+            container.appendChild(card);
+        }
+    }
+
+    // Функция для добавления новых сделок без удаления существующих
+    function addNewDeals(data) {
+        const tbody = document.querySelector('#deals-table tbody');
+        const timestamp = getCurrentTimestamp();
+
+        // Создаем массив с возможными сделками
+        const newDeals = [];
+        for (const symbol in data) {
+            const item = data[symbol];
+            if (item.spread >= MIN_PROFIT_THRESHOLD && item.minAskExchange !== item.maxBidExchange) {
+                // Создаем уникальный идентификатор для сделки
+                const dealId = `${symbol}-${item.minAskExchange}-${item.maxBidExchange}`;
+
+                // Расчет прибыли
+                const profit = (INVESTMENT_AMOUNT / item.minAsk) * (item.maxBid - item.minAsk);
+
+                newDeals.push({
+                    id: dealId,
+                    timestamp,
+                    symbol,
+                    minAskExchange: item.minAskExchange,
+                    minAsk: item.minAsk,
+                    maxBidExchange: item.maxBidExchange,
+                    maxBid: item.maxBid,
+                    spread: item.spread,
+                    profit
+                });
+            }
+        }
+
+        // Добавляем только новые сделки в начало таблицы
+        for (const deal of newDeals) {
+            // Если эта сделка уже есть в истории, обновляем её данные
+            if (dealsHistory[deal.id]) {
+                const existingRow = document.getElementById(`deal-${deal.id}`);
+                if (existingRow) {
+                    // Обновляем только цены и спред
+                    existingRow.querySelector('.ask-price').textContent = deal.minAsk;
+                    existingRow.querySelector('.bid-price').textContent = deal.maxBid;
+                    existingRow.querySelector('.spread-value').textContent = `${deal.spread.toFixed(2)}%`;
+                    existingRow.querySelector('.profit-value').textContent = `$${deal.profit.toFixed(2)}`;
+                    existingRow.querySelector('.timestamp').textContent = deal.timestamp;
+
+                    // Добавляем анимацию обновления
+                    existingRow.classList.remove('new-opportunity');
+                    void existingRow.offsetWidth; // Трюк для перезапуска анимации
+                    existingRow.classList.add('new-opportunity');
+                }
+
+                // Обновляем данные в истории
+                dealsHistory[deal.id] = deal;
+            } else {
+                // Если это новая сделка, добавляем её в начало таблицы
+                const row = document.createElement('tr');
+                row.id = `deal-${deal.id}`;
+                row.className = 'new-opportunity';
+                row.innerHTML = `
+                    <td class="timestamp">${deal.timestamp}</td>
+                    <td>${deal.symbol}</td>
+                    <td>${deal.minAskExchange}</td>
+                    <td class="green ask-price">${deal.minAsk}</td>
+                    <td>${deal.maxBidExchange}</td>
+                    <td class="red bid-price">${deal.maxBid}</td>
+                    <td class="spread-value">${deal.spread.toFixed(2)}%</td>
+                    <td class="green profit-value">$${deal.profit.toFixed(2)}</td>
+                `;
+
+                // Вставляем в начало таблицы
+                if (tbody.firstChild) {
+                    tbody.insertBefore(row, tbody.firstChild);
+                } else {
+                    tbody.appendChild(row);
+                }
+
+                // Сохраняем в историю
+                dealsHistory[deal.id] = deal;
+            }
+        }
+
+        // Удаляем устаревшие сделки из истории (те, которых уже нет в новых данных)
+        const currentDealIds = newDeals.map(deal => deal.id);
+        for (const dealId in dealsHistory) {
+            if (!currentDealIds.includes(dealId)) {
+                // Сделка больше не актуальна, но оставляем её в таблице (не удаляем)
+            }
+        }
+
+        // Ограничиваем количество строк в таблице
+        trimDealsHistory();
+    }
+
+    // Функция для удаления лишних строк, если их больше MAX_DEALS
+    function trimDealsHistory() {
+        const tbody = document.querySelector('#deals-table tbody');
+        const rows = tbody.querySelectorAll('tr');
+
+        if (rows.length > MAX_DEALS) {
+            // Удаляем лишние строки с конца
+            for (let i = MAX_DEALS; i < rows.length; i++) {
+                const rowId = rows[i].id;
+                if (rowId) {
+                    const dealId = rowId.replace('deal-', '');
+                    delete dealsHistory[dealId];
+                }
+                tbody.removeChild(rows[i]);
+            }
+        }
+    }
+
+    // Функция для обновления значений прибыли при изменении суммы инвестиций
+    function updateProfitValues() {
+        const tbody = document.querySelector('#deals-table tbody');
+        const rows = tbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            const rowId = row.id;
+            if (rowId) {
+                const dealId = rowId.replace('deal-', '');
+                const deal = dealsHistory[dealId];
+                if (deal) {
+                    // Пересчитываем прибыль с новой суммой инвестиций
+                    const profit = (INVESTMENT_AMOUNT / deal.minAsk) * (deal.maxBid - deal.minAsk);
+                    row.querySelector('.profit-value').textContent = `$${profit.toFixed(2)}`;
+
+                    // Обновляем значение в истории
+                    deal.profit = profit;
+                }
+            }
+        });
+    }
+
+    // Функция экспорта данных в CSV
+    function exportToCSV() {
+        const tbody = document.querySelector('#deals-table tbody');
+        const rows = tbody.querySelectorAll('tr');
+
+        if (rows.length === 0) {
+            alert('Нет данных для экспорта');
+            return;
+        }
+
+        // Заголовки столбцов
+        let csv = 'Время,Пара,Покупка на,Цена Ask,Продажа на,Цена Bid,Спред (%),Прибыль ($)\n';
+
+        // Добавляем данные из каждой строки
+        rows.forEach(row => {
+            const timestamp = row.querySelector('.timestamp').textContent;
+            const symbol = row.cells[1].textContent;
+            const buyExchange = row.cells[2].textContent;
+            const askPrice = row.cells[3].textContent;
+            const sellExchange = row.cells[4].textContent;
+            const bidPrice = row.cells[5].textContent;
+            const spread = row.cells[6].textContent;
+            const profit = row.cells[7].textContent.replace('$', '');
+
+            csv += `"${timestamp}","${symbol}","${buyExchange}","${askPrice}","${sellExchange}","${bidPrice}","${spread}","${profit}"\n`;
+        });
+
+        // Создаем ссылку для скачивания
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `crypto-arbitrage-${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Инициализация приложения
+    initSettings();
     fetchPrices();
-    setInterval(fetchPrices, 10000);
+    refreshTimer = setInterval(fetchPrices, REFRESH_INTERVAL);
 </script>
 </body>
 </html>
