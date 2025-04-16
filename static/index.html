@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crypto Prices</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pair {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h1>Crypto Prices (Bid/Ask)</h1>
+<table id="prices-table">
+    <thead>
+    <tr>
+        <th>Symbol</th>
+        <th>Binance</th>
+        <th>Bybit</th>
+        <th>MEXC</th>
+        <th>Bitget</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    async function fetchPrices() {
+        const response = await fetch('/prices');
+        const data = await response.json();
+
+        const grouped = {};
+        data.forEach(ticker => {
+            if (!grouped[ticker.symbol]) grouped[ticker.symbol] = {};
+            grouped[ticker.symbol][ticker.exchange] = `${ticker.bid} / ${ticker.ask}`;
+        });
+
+        const tbody = document.querySelector('#prices-table tbody');
+        tbody.innerHTML = '';
+
+        for (const symbol in grouped) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+          <td class="pair">${symbol}</td>
+          <td>${grouped[symbol].Binance || '-'}</td>
+          <td>${grouped[symbol].Bybit || '-'}</td>
+          <td>${grouped[symbol].MEXC || '-'}</td>
+          <td>${grouped[symbol].Bitget || '-'}</td>
+        `;
+            tbody.appendChild(row);
+        }
+
+        console.log("prices has been updated")
+    }
+
+    fetchPrices();
+    setInterval(fetchPrices, 10000); // обновление каждые 10 секунд
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crypto Prices</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pair {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h1>Crypto Prices (Bid/Ask)</h1>
+<table id="prices-table">
+    <thead>
+    <tr>
+        <th>Symbol</th>
+        <th>Binance</th>
+        <th>Bybit</th>
+        <th>MEXC</th>
+        <th>Bitget</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    async function fetchPrices() {
+        const response = await fetch('/prices');
+        const data = await response.json();
+
+        const grouped = {};
+        data.forEach(ticker => {
+            if (!grouped[ticker.symbol]) grouped[ticker.symbol] = {};
+            grouped[ticker.symbol][ticker.exchange] = `${ticker.bid} / ${ticker.ask}`;
+        });
+
+        const tbody = document.querySelector('#prices-table tbody');
+        tbody.innerHTML = '';
+
+        for (const symbol in grouped) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+          <td class="pair">${symbol}</td>
+          <td>${grouped[symbol].Binance || '-'}</td>
+          <td>${grouped[symbol].Bybit || '-'}</td>
+          <td>${grouped[symbol].MEXC || '-'}</td>
+          <td>${grouped[symbol].Bitget || '-'}</td>
+        `;
+            tbody.appendChild(row);
+        }
+    }
+
+    fetchPrices();
+    setInterval(fetchPrices, 10000); // обновление каждые 10 секунд
+</script>
+</body>
+</html>
