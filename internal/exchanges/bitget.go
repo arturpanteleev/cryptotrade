@@ -9,7 +9,9 @@ import (
 )
 
 func GetBitgetTicker(symbol string) (*Ticker, error) {
-	url := fmt.Sprintf("https://api.bitget.com/api/spot/v1/market/ticker?symbol=%s", symbol)
+	symbol = StandardMap[symbol]
+
+	url := fmt.Sprintf("https://api.bitget.com/api/v2/spot/market/tickers?symbol=%s", symbol)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -18,8 +20,8 @@ func GetBitgetTicker(symbol string) (*Ticker, error) {
 
 	var result struct {
 		Data []struct {
-			BidPrice string `json:"bestBid"`
-			AskPrice string `json:"bestAsk"`
+			BidPrice string `json:"bidPr"`
+			AskPrice string `json:"askPr"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

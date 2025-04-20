@@ -9,7 +9,9 @@ import (
 )
 
 func GetBybitTicker(symbol string) (*Ticker, error) {
-	url := fmt.Sprintf("https://api.bybit.com/v2/public/tickers?symbol=%s", symbol)
+	symbol = StandardMap[symbol]
+
+	url := fmt.Sprintf("https://api.bybit.com/v5/market/tickers?category=inverse&symbol=%s", symbol)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -17,20 +19,29 @@ func GetBybitTicker(symbol string) (*Ticker, error) {
 	defer resp.Body.Close()
 
 	var result struct {
-		Result []struct {
-			BidPrice string `json:"bid_price"`
-			AskPrice string `json:"ask_price"`
+		Result struct {
+			List []struct {
+				BidPrice string `json:"bid1Price"`
+				AskPrice string `json:"ask1Price"`
+			} `json:"list"`
 		} `json:"result"`
 	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	if len(result.Result) == 0 {
+	if len(result.Result.List) == 0 {
 		return nil, fmt.Errorf("no data from Bybit")
 	}
 
-	bid, _ := strconv.ParseFloat(result.Result[0].BidPrice, 64)
-	ask, _ := strconv.ParseFloat(result.Result[0].AskPrice, 64)
+	bid, err := strconv.ParseFloat(result.Result.List[0].BidPrice, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bid price: %w", err)
+	}
+	ask, err := strconv.ParseFloat(result.Result.List[0].AskPrice, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid ask price: %w", err)
+	}
 
 	return &Ticker{
 		Exchange: "Bybit",

@@ -9,6 +9,7 @@ import (
 )
 
 func GetMEXCTicker(symbol string) (*Ticker, error) {
+	symbol = StandardMap[symbol]
 	url := fmt.Sprintf("https://api.mexc.com/api/v3/ticker/bookTicker?symbol=%s", symbol)
 	resp, err := http.Get(url)
 	if err != nil {

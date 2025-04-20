@@ -9,6 +9,8 @@ import (
 )
 
 func GetBinanceTicker(symbol string) (*Ticker, error) {
+	symbol = StandardMap[symbol]
+
 	url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/bookTicker?symbol=%s", symbol)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -16,16 +18,22 @@ func GetBinanceTicker(symbol string) (*Ticker, error) {
 	}
 	defer resp.Body.Close()
 
-	var data struct {
+	var result struct {
 		BidPrice string `json:"bidPrice"`
 		AskPrice string `json:"askPrice"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	bid, _ := strconv.ParseFloat(data.BidPrice, 64)
-	ask, _ := strconv.ParseFloat(data.AskPrice, 64)
+	bid, err := strconv.ParseFloat(result.BidPrice, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bid: %w", err)
+	}
+	ask, err := strconv.ParseFloat(result.AskPrice, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid ask: %w", err)
+	}
 
 	return &Ticker{
 		Exchange: "Binance",

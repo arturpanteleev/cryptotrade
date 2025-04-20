@@ -7,14 +7,6 @@ import (
 	"sync"
 )
 
-var pairs = []string{
-	"BTCUSDT",
-	"ETHUSDT",
-	"BNBUSDT",
-	"XRPUSDT",
-	"DOGEUSDT",
-}
-
 func PricesHandler(w http.ResponseWriter, r *http.Request) {
 	type ExchangeData struct {
 		Bid float64 `json:"bid"`
@@ -37,11 +29,14 @@ func PricesHandler(w http.ResponseWriter, r *http.Request) {
 		exchange.GetBitgetTicker,
 		exchange.GetBybitTicker,
 		exchange.GetMEXCTicker,
+		exchange.GetOkxTicker,
+		exchange.GetUpbitTicker,
+		exchange.GetCoinbaseTicker,
 	}
 
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
-	for _, symbol := range pairs {
+	for _, symbol := range exchange.StandardMap {
 		for _, f := range providers {
 			wg.Add(1)
 			provider := f
