@@ -10,6 +10,7 @@
             font-family: 'Segoe UI', sans-serif;
             margin: 0;
             padding: 20px;
+            position: relative; /* Для абсолютного позиционирования статус-сообщений */
         }
 
         h1 {
@@ -90,15 +91,6 @@
             align-items: center;
         }
 
-        .live-indicator .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #00d8a6;
-            margin-right: 6px;
-            animation: pulse 2s infinite;
-        }
-
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -149,16 +141,42 @@
             100% { background-color: transparent; }
         }
 
+        /* Обновленные стили для контейнера статуса - теперь справа */
+        #status-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: auto;
+            max-width: 300px;
+            pointer-events: none; /* Позволяет кликать сквозь этот элемент */
+        }
+
         .status-message {
-            padding: 10px;
+            padding: 10px 20px;
             border-radius: 5px;
             margin: 10px 0;
             text-align: center;
+            background-color: rgba(30, 30, 30, 0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s, transform 0.3s;
+            animation: slideInRight 0.3s;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .status-message.hiding {
+            opacity: 0;
+            transform: translateX(20px);
         }
 
         .error {
-            background-color: rgba(255, 92, 92, 0.2);
+            background-color: rgba(255, 92, 92, 0.9);
             border: 1px solid #ff5c5c;
+            color: #fff;
         }
 
         .settings {
@@ -245,11 +263,10 @@
 </head>
 <body>
 <h1>Crypto Arbitrage Dashboard</h1>
-<div class="live-indicator"><div class="status-dot"></div>Live updates every <span id="refresh-rate">10</span>s</div>
+<div class="live-indicator"></div>
 <div id="status-container"></div>
 
 <div class="settings">
-    <h3>Настройки</h3>
     <div class="settings-grid">
         <div class="setting-item">
             <label for="min-spread">Мин. спред (%)</label>
@@ -305,6 +322,7 @@
     let MAX_DEALS = 100; // Максимальное количество сделок в таблице
     let lastUpdateTime = '-';
     let refreshTimer = null;
+    let statusMessageId = null; // Для отслеживания сообщения загрузки
 
     // Хранение уже отображенных сделок
     let dealsHistory = {};
@@ -325,7 +343,6 @@
 
         document.getElementById('refresh-interval').addEventListener('change', function() {
             REFRESH_INTERVAL = parseInt(this.value) * 1000;
-            document.getElementById('refresh-rate').textContent = this.value;
 
             // Перезапускаем таймер
             if (refreshTimer) clearInterval(refreshTimer);
@@ -353,16 +370,53 @@
         document.getElementById('export-deals-btn').addEventListener('click', exportToCSV);
     }
 
+    // Обновленная функция setStatus для push-уведомлений
     function setStatus(message, isError = false) {
         const container = document.getElementById('status-container');
-        container.innerHTML = '';
 
-        if (message) {
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `status-message ${isError ? 'error' : ''}`;
-            statusDiv.textContent = message;
-            container.appendChild(statusDiv);
+        // Если есть предыдущее сообщение, удаляем его
+        clearStatus();
+
+        if (!message) return;
+
+        // Создаем новое сообщение
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `status-message ${isError ? 'error' : ''}`;
+        statusDiv.textContent = message;
+        statusDiv.id = 'status-msg-' + Date.now(); // Уникальный ID для каждого сообщения
+        container.appendChild(statusDiv);
+
+        // Сохраняем ID текущего сообщения о загрузке
+        if (!isError) {
+            statusMessageId = statusDiv.id;
+        } else {
+            // Для ошибок добавляем кнопку закрытия
+            const closeBtn = document.createElement('span');
+            closeBtn.innerHTML = ' &times;';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.marginLeft = '10px';
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.pointerEvents = 'auto'; // Разрешаем события мыши на кнопке закрытия
+            closeBtn.onclick = function() {
+                statusDiv.classList.add('hiding');
+                setTimeout(() => {
+                    if (container.contains(statusDiv)) {
+                        container.removeChild(statusDiv);
+                    }
+                }, 300);
+            };
+            statusDiv.appendChild(closeBtn);
+
+            // Ошибки будут оставаться до тех пор, пока пользователь не закроет их
+            // или до следующего обновления
         }
+    }
+
+    // Функция для очистки статуса
+    function clearStatus() {
+        const container = document.getElementById('status-container');
+        container.innerHTML = '';
+        statusMessageId = null;
     }
 
     function getCurrentTimestamp() {
@@ -384,8 +438,10 @@
             document.getElementById('last-update-time').textContent = lastUpdateTime;
 
             renderDashboard(data);
-            addNewDeals(data); // Используем addNewDeals вместо renderDeals
-            setStatus('');
+            addNewDeals(data);
+
+            // Немедленно удаляем сообщение о загрузке
+            clearStatus();
         } catch (e) {
             console.error('Fetch error', e);
             setStatus('Ошибка загрузки данных. Проверьте соединение с сервером.', true);
@@ -509,14 +565,6 @@
 
                 // Сохраняем в историю
                 dealsHistory[deal.id] = deal;
-            }
-        }
-
-        // Удаляем устаревшие сделки из истории (те, которых уже нет в новых данных)
-        const currentDealIds = newDeals.map(deal => deal.id);
-        for (const dealId in dealsHistory) {
-            if (!currentDealIds.includes(dealId)) {
-                // Сделка больше не актуальна, но оставляем её в таблице (не удаляем)
             }
         }
 
