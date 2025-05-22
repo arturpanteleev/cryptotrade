@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	http.HandleFunc("/prices", handlers.PricesHandler)
 
 	// Статичные файлы (включая index.html)
@@ -15,5 +16,7 @@ func main() {
 	http.Handle("/", fs)
 
 	fmt.Println("Server running on http://localhost:88")
+
 	log.Fatal(http.ListenAndServe(":88", nil))
+
 }

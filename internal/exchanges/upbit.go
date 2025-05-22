@@ -8,14 +8,7 @@ import (
 )
 
 func GetUpbitTicker(symbol string) (*Ticker, error) {
-	standardMap := map[string]string{
-		"BTCUSDT":  "USDT-BTC",
-		"ETHUSDT":  "USDT-ETH",
-		"BNBUSDT":  "USDT-BNB",
-		"XRPUSDT":  "USDT-XRP",
-		"DOGEUSDT": "USDT-DOGE",
-	}
-	symbol = standardMap[symbol]
+	symbol = UpBitMap[symbol]
 
 	url := fmt.Sprintf("https://api.upbit.com/v1/orderbook?markets=%s", symbol)
 	resp, err := http.Get(url)

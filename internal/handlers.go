@@ -3,24 +3,28 @@ package handlers
 import (
 	exchange "cryptotrade/internal/exchanges"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 )
 
-func PricesHandler(w http.ResponseWriter, r *http.Request) {
-	type ExchangeData struct {
-		Bid float64 `json:"bid"`
-		Ask float64 `json:"ask"`
-	}
+const comission = 0.001
 
-	type SymbolData struct {
-		Exchanges      map[string]ExchangeData `json:"exchanges"`
-		MinAsk         float64                 `json:"minAsk"`
-		MinAskExchange string                  `json:"minAskExchange"`
-		MaxBid         float64                 `json:"maxBid"`
-		MaxBidExchange string                  `json:"maxBidExchange"`
-		Spread         float64                 `json:"spread"`
-	}
+type ExchangeData struct {
+	Bid float64 `json:"bid"`
+	Ask float64 `json:"ask"`
+}
+
+type SymbolData struct {
+	Exchanges      map[string]ExchangeData `json:"exchanges"`
+	MinAsk         float64                 `json:"minAsk"`
+	MinAskExchange string                  `json:"minAskExchange"`
+	MaxBid         float64                 `json:"maxBid"`
+	MaxBidExchange string                  `json:"maxBidExchange"`
+	Spread         float64                 `json:"spread"`
+}
+
+func PricesHandler(w http.ResponseWriter, r *http.Request) {
 
 	result := make(map[string]*SymbolData)
 
@@ -45,6 +49,10 @@ func PricesHandler(w http.ResponseWriter, r *http.Request) {
 				defer wg.Done()
 				t, err := provider(s)
 				if err != nil {
+					return
+				}
+
+				if t.Bid == 0 && t.Ask == 0 {
 					return
 				}
 
@@ -86,9 +94,30 @@ func PricesHandler(w http.ResponseWriter, r *http.Request) {
 		data.MaxBidExchange = maxBidEx
 		if minAsk > 0 {
 			data.Spread = ((maxBid - minAsk) / minAsk) * 100
+			//todo cсделать отправку в телегу
+			if data.Spread > 0.2 {
+
+			}
+
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+// Функция форматирования сообщения
+func formatTelegramMessage(symbol string, data *SymbolData) string {
+	message := fmt.Sprintf(
+		"📈 Символ: %s\n"+
+			"Минимальный Ask: %.4f (%s)\n"+
+			"Максимальный Bid: %.4f (%s)\n"+
+			"➖ Спред: %.4f",
+		symbol,
+		data.MinAsk, data.MinAskExchange,
+		data.MaxBid, data.MaxBidExchange,
+		data.Spread,
+	)
+
+	return message
 }

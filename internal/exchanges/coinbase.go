@@ -9,15 +9,8 @@ import (
 )
 
 func GetCoinbaseTicker(symbol string) (*Ticker, error) {
-	standardMap := map[string]string{
-		"BTCUSDT":  "BTC-USDT",
-		"ETHUSDT":  "ETH-USDT",
-		"BNBUSDT":  "BNB-USDT",
-		"XRPUSDT":  "XRP-USDT",
-		"DOGEUSDT": "DOGE-USDT",
-	}
 
-	symbol = standardMap[symbol]
+	symbol = AlterMap[symbol]
 	url := fmt.Sprintf("https://api.exchange.coinbase.com/products/%s/ticker", symbol)
 	resp, err := http.Get(url)
 	if err != nil {
